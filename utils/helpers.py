@@ -321,6 +321,8 @@ def generate_report(
     results['egs'] = len(disc_inputs) / elapsed_time if elapsed_time > 0 else 0
 
     if save_report:
-        exp_path = f"results/{approach_name}_experiment_results.csv"
+        data_dir = os.path.join('results')
+        os.makedirs(data_dir, exist_ok=True)
+        exp_path = f"{data_dir}/{approach_name}_experiment_results.csv"
 
         save_results(results, exp_path)
