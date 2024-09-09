@@ -36,7 +36,7 @@
 |    NBTree     : 85.90+-0.28
 |
 |
-| Following algorithms were later run with the following error rates,
+| Following algorithms were later run_sdg with the following error rates,
 |    all after removal of unknowns and using the original train/test split.
 |    All these numbers are straight runs using MLC++ with default values.
 |

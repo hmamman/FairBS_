@@ -358,7 +358,7 @@ if __name__ == '__main__':
     print(f'Max allowed time: {max_allowed_time} seconds')
     print('')
 
-    # Initialize and run Aequitas
+    # Initialize and run_sdg Aequitas
     aequitas = Aequitas(
         config=config,
         classifier_name=classifier_name,

@@ -77,7 +77,7 @@ dataset1:
 
 ## Usage
 
-To run the experiment, use the following command:
+To run_sdg the experiment, use the following command:
 
 ```
 python main.py [arguments]
@@ -85,7 +85,7 @@ python main.py [arguments]
 
 ### Arguments
 
-- `--approach_name`: The fairness testing approach to run. Options: 'aequitas', 'fairbs', 'both'. Default: 'both'
+- `--approach_name`: The fairness testing approach to run_sdg. Options: 'aequitas', 'fairbs', 'both'. Default: 'both'
 - `--max_allowed_time`: Maximum time allowed for the experiment (in seconds). Default: 300
 - `--max_iteration`: Maximum number of experiment iterations. Default: 1
 
@@ -120,9 +120,9 @@ When both approaches are selected, the experiment runs FairBS and Aequitas seque
 ## Output
 
 The experiment generates output files in the `results/` directory. These files include:
-- Detailed logs of each run
+- Detailed logs of each run_sdg
 - Fairness metrics for each approach
-- Comparative analysis (when both approaches are run)
+- Comparative analysis (when both approaches are run_sdg)
 
 ## Troubleshooting
 

@@ -1,19 +1,13 @@
+import time
+import joblib
+import random
 import numpy as np
 from sklearn.tree import DecisionTreeClassifier
 from queue import PriorityQueue
 from z3 import *
-import os, sys
-import copy
-import time
-import joblib
-import random
 from lime import lime_tabular
-# Get the absolute path to the directory where sdg.py is located
-base_path = os.path.dirname(os.path.abspath(__file__))
-# Two levels up from sdg.py
-sys.path.append(os.path.join(base_path, "../../"))
 
-from utils.helpers import cluster, get_data, generate_report, get_experiment_params
+from utils import helpers
 
 
 class SDG:
@@ -34,16 +28,13 @@ class SDG:
         self.tot_inputs = set()
 
         self.classifier_name = classifier_name
-        self.classifier_path = f'models/{self.config.dataset_name}/{self.classifier_name}_standard_unfair.pkl'
+        self.classifier_path = f'models/{self.config.dataset_name}/{self.classifier_name}_classifier.pkl'
         self.model = joblib.load(self.classifier_path)
         self.preds = self.model.predict
 
         self.elapsed_time = 0
-        self.time_to_1000_disc = -1
+
         self.total_generated = 0
-        self.input_distances = None
-        self.cumulative_efficiency = []
-        self.tracking_interval = 100
 
     def gen_arguments(self):
         return [Int(name) for name in self.config.feature_name]
@@ -56,7 +47,7 @@ class SDG:
         return np.array(samples)
 
     def seed_test_input(self, cluster_num, limit, X):
-        clf = cluster(self.config.dataset_name, X, cluster_num)
+        clf = helpers.cluster(self.config.dataset_name, X, cluster_num)
         clusters = [np.where(clf.labels_ == i) for i in range(cluster_num)]
         rows = []
         max_size = max(len(c[0]) for c in clusters)
@@ -129,6 +120,9 @@ class SDG:
             return tnew.astype('int').tolist()
         return None
 
+    def average_confidence(self, path_constraint):
+        return np.mean(np.array(path_constraint)[:, 3].astype(float))
+
     def local_solve(self, path_constraint, t, index):
         c = path_constraint[index]
         s = Solver()
@@ -148,40 +142,20 @@ class SDG:
             return tnew.astype('int').tolist()
         return None
 
-    def average_confidence(self, path_constraint):
-        return np.mean(np.array(path_constraint)[:, 3].astype(float))
-
-    def update_cumulative_efficiency(self):
-        """
-        Update the cumulative efficiency data if the current number of total inputs
-        meets the tracking criteria (first input or every tracking_interval inputs).
-        """
-        total_inputs = len(self.tot_inputs)
-        if total_inputs == 1 or (total_inputs % self.tracking_interval == 0 and
-                                 (not self.cumulative_efficiency or
-                                  self.cumulative_efficiency[-1][0] != total_inputs)):
-            total_disc_inputs = len(self.local_disc_inputs) + len(self.global_disc_inputs)
-            self.cumulative_efficiency.append([total_inputs, total_disc_inputs])
-
-    def set_time_to_1000_disc(self):
-        disc_inputs_count = len(self.global_disc_inputs) + len(self.local_disc_inputs)
-        if disc_inputs_count >= 1000 and self.time_to_1000_disc == -1:
-            self.time_to_1000_disc = time.time() - self.start_time
-            print(f"\nTime to generate 1000 discriminatory inputs: {self.time_to_1000_disc:.2f} seconds")
-
-    def run(self, cluster_num=4, limit=1000, max_allowed_time=300):
+    def run_sdg(self, cluster_num=4, limit=1000, max_allowed_time=300):
         self.start_time = time.time()
 
-        data = get_data(self.config.dataset_name)
+        data = helpers.get_data(self.config.dataset_name)
         X, Y, input_shape, nb_classes = data()
 
         inputs = self.seed_test_input(cluster_num, limit, X)
+
         q = PriorityQueue()
         for inp in inputs[::-1]:
             q.put((self.rank1, X[inp].tolist()))
 
         visited_path = []
-        while self.total_generated < limit*limit and not q.empty():
+        while self.total_generated < limit * limit and not q.empty():
             self.elapsed_time = time.time() - self.start_time
             if self.elapsed_time >= max_allowed_time:
                 break
@@ -196,18 +170,15 @@ class SDG:
             self.tot_inputs.add(tuple(temp))
 
             self.total_generated += 1
-            self.update_cumulative_efficiency()
 
             if found:
                 if (tuple(temp) not in self.global_disc_inputs) and (tuple(temp) not in self.local_disc_inputs):
                     if t_rank > 2:
                         self.global_disc_inputs.add(tuple(temp))
                         self.global_disc_inputs_list.append(temp)
-                        self.set_time_to_1000_disc()
                     else:
                         self.local_disc_inputs.add(tuple(temp))
                         self.local_disc_inputs_list.append(temp)
-                        self.set_time_to_1000_disc()
 
                 # Local search
                 for i in range(len(p)):
@@ -252,21 +223,20 @@ class SDG:
         disc_inputs = self.local_disc_inputs_list
         disc_inputs.extend(self.global_disc_inputs_list)
 
-        generate_report(
+        helpers.generate_report(
             approach_name='SDG',
             dataset_name=self.config.dataset_name,
             classifier_name=self.classifier_name,
             sensitive_name=self.config.sens_name[self.sensitive_param],
+            samples=self.global_disc_inputs_list,
             tot_inputs=self.tot_inputs,
             disc_inputs=disc_inputs,
-            total_generated_inputs=self.total_generated,
-            elapsed_time=elapsed_time,
-            time_to_1000_disc=self.time_to_1000_disc,
-            cumulative_efficiency=self.cumulative_efficiency
+            elapsed_time=elapsed_time
         )
 
+
 if __name__ == '__main__':
-    config, sensitive_name, sensitive_param, classifier_name, max_allowed_time = get_experiment_params()
+    config, sensitive_name, sensitive_param, classifier_name, max_allowed_time = helpers.get_experiment_params()
 
     # print(f'Approach name: ExpGA')
     print(f'Dataset: {config.dataset_name}')
@@ -280,4 +250,4 @@ if __name__ == '__main__':
         sensitive_param=sensitive_param
     )
 
-    sdg.run(max_allowed_time=max_allowed_time)
+    sdg.run_sdg(max_allowed_time=max_allowed_time)
