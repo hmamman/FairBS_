@@ -193,3 +193,21 @@ class Aequitas:
             elapsed_time=elapsed_time,
             save_report=True
         )
+
+
+if __name__ == '__main__':
+    config, sensitive_name, sensitive_param, classifier_name, max_allowed_time = helpers.get_experiment_params()
+
+    # print(f'Approach name: ExpGA')
+    print(f'Dataset: {config.dataset_name}')
+    print(f'Classifier: {classifier_name}')
+    print(f'Sensitive name: {sensitive_name}')
+    print('')
+
+    aequitas = Aequitas(
+        config=config,
+        classifier_name=classifier_name,
+        sensitive_param=sensitive_param
+    )
+
+    aequitas.run_aequitas(max_allowed_time=max_allowed_time)

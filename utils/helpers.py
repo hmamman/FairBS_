@@ -1,19 +1,15 @@
 import os
 import sys
 
-#
-# # Get the absolute path to the directory where expga.py is located
+
 base_path = os.path.dirname(os.path.abspath(__file__))
-# # Two levels up from expga.py
 sys.path.append(os.path.join(base_path, "../"))
 
-from utils.ml_classifiers import CLASSIFIERS
 import argparse
 import joblib
 import numpy as np
 import pandas as pd
 
-from scipy.stats import norm
 from datetime import datetime
 from sklearn.cluster import KMeans
 
@@ -44,10 +40,6 @@ def get_experiment_params():
 
     config = get_data_config(dataset_name)
     sens_name = config.sens_name
-
-    if classifier_name not in CLASSIFIERS and classifier_name != 'dnn':
-        available_classifiers = ", ".join(CLASSIFIERS.keys())
-        raise ValueError(f"Invalid classifier name: {classifier_name}. Available options are: {available_classifiers}")
 
     # Find the key corresponding to the sensitive name
     sensitive_param = None
@@ -99,57 +91,6 @@ def get_data_config(dataset_name):
     config_dict = get_config_dict()
     validate_dataset_name(dataset_name, config_dict)
     return config_dict[dataset_name]
-
-
-def update_sensitive_attributes(data_inputs, sens_configs):
-    data = []
-    for inp in data_inputs:
-        inp_copy = np.copy(inp)
-        for sens in sens_configs:
-            inp_copy[sens['index']] = sens['value']
-        data.append(inp_copy)
-    return np.array(data)
-
-
-def get_disc_results(samples_r, samples_not_r, confidence=0.95):
-    """
-    Compute error margins and discrimination score for two sample sets.
-
-    Parameters:
-    samples_r (array-like): First set of samples
-    samples_not_r (array-like): Second set of samples
-    confidence (float): Confidence level for error calculation (default: 0.95)
-
-    Returns:
-    dict: Dictionary containing error margin, sample errors, discrimination score, and sample scores
-    """
-
-    score_r = np.mean(samples_r)
-    score_not_r = np.mean(samples_not_r)
-
-    num_samples = len(samples_r)
-
-    error_r = sample_error(score_r, num_samples)
-    error_not_r = sample_error(score_not_r, num_samples)
-    error_margin = error_r + error_not_r
-
-    disc_score = abs(score_r - score_not_r)
-
-    return {
-        'error_margin': error_margin,
-        'sample_errors': [error_r, error_not_r],
-        'disc_score': disc_score,
-        'sample_scores': [score_r, score_not_r],
-    }
-
-
-def sample_error(score, num_samples, confidence=0.95):
-    """
-    Compute error margin for a given discrimination score and number of samples.
-    """
-    z_value = norm.ppf(1 - (1 - confidence) / 2)
-    return z_value * np.sqrt(score * (1 - score) / num_samples)
-
 
 def numpy_to_python(obj):
     if isinstance(obj, np.ndarray):

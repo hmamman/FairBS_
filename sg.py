@@ -10,9 +10,9 @@ from lime import lime_tabular
 from utils import helpers
 
 
-class SDG:
+class SG:
     def __str__(self):
-        return 'SDG'
+        return 'SG'
 
     def __init__(self, config, classifier_name, sensitive_param):
         self.start_time = time.time()
@@ -224,7 +224,7 @@ class SDG:
         disc_inputs.extend(self.global_disc_inputs_list)
 
         helpers.generate_report(
-            approach_name='SDG',
+            approach_name='SG',
             dataset_name=self.config.dataset_name,
             classifier_name=self.classifier_name,
             sensitive_name=self.config.sens_name[self.sensitive_param],
@@ -244,10 +244,10 @@ if __name__ == '__main__':
     print(f'Sensitive name: {sensitive_name}')
     print('')
 
-    sdg = SDG(
+    sg = SG(
         config=config,
         classifier_name=classifier_name,
         sensitive_param=sensitive_param
     )
 
-    sdg.run_sdg(max_allowed_time=max_allowed_time)
+    sg.run_sdg(max_allowed_time=max_allowed_time)
